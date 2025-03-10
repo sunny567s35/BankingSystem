@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}         
+
+<form action="{% url 'register' %}" method="post">
+    {% csrf_token %}
+    Enter Account Number: <input type="text" name="account_number"><br>
+    Enter password: <input type="password" name="password"><br>
+    Enter email: <input type="email" name="email"><br>
+    Enter first name: <input type="text" name="firstname"><br>
+    Enter last name: <input type="text" name="lastname"><br>
+    Enter account type: <select name="account_type">
+        <option value="savings">Savings</option>
+        <option value="current">Current</option>
+    </select><br>
+    <input type="submit">
+</form>
+
+{% endblock %}

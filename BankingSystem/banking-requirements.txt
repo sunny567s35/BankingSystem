@@ -1,0 +1,223 @@
+CREATE TABLE accounts (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  account_number VARCHAR(50) UNIQUE NOT NULL,
+  pin TEXT NOT NULL,
+  firstname VARCHAR(250) NOT NULL,
+  lastname VARCHAR(250) NOT NULL,
+  middlename VARCHAR(250),
+  email TEXT NOT NULL,
+  password TEXT NOT NULL,
+  balance FLOAT NOT NULL,
+  account_type ENUM('savings', 'current') NOT NULL,
+  interest_rate FLOAT DEFAULT 0.03,
+  date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+  date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE transactions (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  account_id INT NOT NULL,
+  transaction_type ENUM('deposit', 'withdrawal', 'transfer', 'interest_credit') NOT NULL,
+  amount FLOAT NOT NULL,
+  balance_after FLOAT NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+financial_risk_system/
+│── backend/
+│   ├── accounts/              # User authentication & account management
+│   │   ├── migrations/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── tasks.py
+│   ├── transactions/           # Deposits, withdrawals, transfers, interest
+│   │   ├── migrations/
+│   │   ├── __init__.py
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── tasks.py
+│   ├── reports/                # Transaction reports, analytics
+│   │   ├── __init__.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── serializers.py
+│   ├── financial_risk_system/  # Main Django project settings
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── wsgi.py
+│   │   ├── asgi.py
+│   ├── celery.py               # Celery configuration
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile              # Docker containerization
+│   ├── docker-compose.yml      # Docker setup
+│   ├── manage.py               # Django CLI tool
+│
+│── monitoring/                 # DevOps monitoring setup
+│   ├── prometheus.yml
+│   ├── grafana-dashboard.json
+│
+│── deployment/                 # CI/CD setup, Kubernetes files
+│   ├── Jenkinsfile
+│   ├── kubernetes-deploy.yml
+│
+│── frontend/                    # Optional frontend (React)
+│   ├── src/
+│   ├── package.json
+
+
+Abstract
+The Financial Risk Analytics and Banking System is a robust financial application that facilitates real-time transaction monitoring, interest calculation, and risk assessment. The system is built using Django, PostgreSQL, Celery, and Docker to ensure high performance, security, and scalability. It enables secure user authentication, bank account management, automated interest computation, and real-time financial reporting. The project follows DevOps and SRE principles, ensuring observability through monitoring, logging, and system health checks.
+
+Problem Statement
+Financial institutions and individual users require a secure, automated, and scalable system to handle banking operations such as deposits, withdrawals, fund transfers, and interest calculations. Traditional banking systems often lack real-time transaction visibility, robust audit mechanisms, and automated risk analytics. The need for a modernized, API-driven, and cloud-native banking solution is crucial to enhance financial security, risk assessment, and operational efficiency.
+
+Approach
+The project is developed using Django REST Framework (DRF) for API-driven architecture. The backend interacts with a PostgreSQL database, managing user authentication, transaction records, and bank account details. Interest calculations are executed periodically using Celery tasks, ensuring accurate updates for savings and current accounts. Real-time monitoring is integrated using Prometheus and Grafana, while logs are stored in the ELK Stack. The system is containerized with Docker and deployed via Kubernetes, supporting CI/CD automation with GitHub Actions and Jenkins.
+
+Tech Stack
+
+Backend: Django + Django REST Framework (DRF)
+
+Database: PostgreSQL / MySQL
+
+Frontend (Optional): React.js + Bootstrap
+
+Task Scheduling: Celery with Redis
+
+Containerization: Docker, Docker Compose
+
+Monitoring: Prometheus, Grafana, ELK Stack
+
+Deployment: Kubernetes (Optional), AWS/GCP/Azure
+
+CI/CD: Jenkins, GitHub Actions
+
+This structured approach ensures a highly scalable, automated, and secure financial risk management system that aligns with modern DevOps and financial analytics standards.
+
+Financial Risk Analytics and Banking System
+
+1. Overview
+
+The Financial Risk Analytics and Banking System enables real-time monitoring of financial transactions, interest calculations, and risk assessment. It provides role-based authentication, transaction history, balance updates, and scheduled interest calculations using Django, PostgreSQL, Docker, and Celery.
+
+2. Tech Stack
+
+Backend: Django + Django REST Framework (DRF)
+
+Database: PostgreSQL / MySQL
+
+Frontend (Optional): React.js + Bootstrap
+
+Containerization: Docker, Docker Compose
+
+Monitoring: Prometheus, Grafana, ELK Stack
+
+Task Scheduling: Celery with Redis
+
+Deployment: Kubernetes (Optional), AWS/GCP/Azure
+
+3. Database Schema (Based on Provided SQL File)
+
+Accounts Table
+
+CREATE TABLE accounts (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  account_number VARCHAR(50) UNIQUE NOT NULL,
+  pin TEXT NOT NULL,
+  firstname VARCHAR(250) NOT NULL,
+  lastname VARCHAR(250) NOT NULL,
+  middlename VARCHAR(250),
+  email TEXT NOT NULL,
+  password TEXT NOT NULL,
+  balance FLOAT NOT NULL,
+  account_type ENUM('savings', 'current') NOT NULL,
+  interest_rate FLOAT DEFAULT 0.03,
+  date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
+  date_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+Transactions Table
+
+CREATE TABLE transactions (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  account_id INT NOT NULL,
+  transaction_type ENUM('deposit', 'withdrawal', 'transfer', 'interest_credit') NOT NULL,
+  amount FLOAT NOT NULL,
+  balance_after FLOAT NOT NULL,
+  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+4. API Endpoints
+
+Authentication & Users
+
+POST /api/auth/register/ - Register a new user
+
+POST /api/auth/login/ - Authenticate user (JWT-based)
+
+GET /api/user/profile/ - Fetch user details
+
+Banking Features
+
+GET /api/accounts/ - List all accounts
+
+POST /api/accounts/create/ - Create an account
+
+GET /api/accounts/{id}/ - Get account details
+
+GET /api/accounts/{id}/transactions/ - Fetch transaction history
+
+POST /api/transactions/deposit/ - Deposit money
+
+POST /api/transactions/withdraw/ - Withdraw money
+
+POST /api/transactions/transfer/ - Transfer funds
+
+GET /api/reports/transactions/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD - Transaction reports with filters
+
+Interest Calculation (Celery Task)
+
+GET /api/accounts/{id}/interest/ - View pending interest
+
+POST /api/accounts/{id}/apply_interest/ - Apply interest manually
+
+Scheduled: Celery job runs monthly to apply interest to all accounts
+
+5. Flow of Control
+
+User registers/logs in → JWT authentication
+
+User creates an account (Selects Savings/Current type)
+
+Deposits/Withdrawals processed → Transaction recorded
+
+Interest applied via Celery tasks (Monthly auto-update)
+
+User checks transaction reports (Filtered by date range)
+
+System logs activities & monitors performance (ELK & Prometheus)
+
+6. Deployment & Monitoring
+
+Docker Compose for local setup
+
+CI/CD using GitHub Actions
+
+Monitoring: Logs stored in ELK Stack, system health in Prometheus + Grafana
+
+Kubernetes (Optional): For production-scale deployment
+
+7. Expected Outcome
+
+✅ Secure, scalable, real-time financial risk analytics & banking system ✅ Automated interest calculations for accurate account balances ✅ API-driven architecture for seamless integrations ✅ Robust logging, monitoring, and security enforcement
+
+This document outlines the key technical and functional details. Do you need help with Django project setup or writing API logic?
+
