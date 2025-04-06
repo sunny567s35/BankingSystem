@@ -1,0 +1,182 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4>Transfer Funds</h4>
+    <div class="card p-4 shadow-sm">
+        <form method="POST" id="transferForm" action="{% url 'transfer_view' %}">
+            {% csrf_token %}
+
+            <!-- From Account -->
+            <div class="mb-3">
+                <label for="fromAccount" class="form-label fw-bold">From Account</label>
+                <input type="text" class="form-control border-danger" id="fromAccount" name="from_account" required>
+                <div id="fromAccountError" class="text-danger mt-2"></div>
+            </div>
+
+            <!-- From Account Details -->
+            <div id="fromAccountDetails" class="row mt-3" style="display: none;">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Account Holder</label>
+                    <input type="text" class="form-control bg-light" id="fromAccountName" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Current Balance</label>
+                    <input type="text" class="form-control bg-light" id="fromAccountBalance" readonly>
+                </div>
+            </div>
+
+            <!-- To Account -->
+            <div class="mb-3 mt-4">
+                <label for="toAccount" class="form-label fw-bold">To Account</label>
+                <input type="text" class="form-control border-success" id="toAccount" name="to_account" required>
+                <div id="toAccountError" class="text-danger mt-2"></div>
+            </div>
+
+            <!-- To Account Details -->
+            <div id="toAccountDetails" class="row mt-3" style="display: none;">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Account Holder</label>
+                    <input type="text" class="form-control bg-light" id="toAccountName" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Current Balance</label>
+                    <input type="text" class="form-control bg-light" id="toAccountBalance" readonly>
+                </div>
+            </div>
+
+            <!-- Transfer Amount -->
+            <div class="mb-3 mt-4">
+                <label for="amount" class="form-label fw-bold">Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+
+            <!-- Buttons -->
+            <button type="submit" class="btn btn-primary" id="submitBtn">Transfer</button>
+            <a href="{% url 'transactions' %}" class="btn btn-light">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const transferForm = document.getElementById("transferForm");
+    const fromAccountInput = document.getElementById("fromAccount");
+    const toAccountInput = document.getElementById("toAccount");
+    const fromAccountDetails = document.getElementById("fromAccountDetails");
+    const toAccountDetails = document.getElementById("toAccountDetails");
+    const submitBtn = document.getElementById("submitBtn");
+
+    function resetAccountDetails(accountType) {
+        const detailsDiv = document.getElementById(`${accountType}AccountDetails`);
+        const nameInput = document.getElementById(`${accountType}AccountName`);
+        const balanceInput = document.getElementById(`${accountType}AccountBalance`);
+        const errorDiv = document.getElementById(`${accountType}AccountError`);
+        
+        nameInput.value = "";
+        balanceInput.value = "";
+        detailsDiv.style.display = "none";
+        errorDiv.textContent = "";
+    }
+
+    function fetchAccountDetails(accountNumber, accountType) {
+        if (accountNumber.length === 12) {
+            fetch(`{% url 'transfer_view' %}?account_number=${accountNumber}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Server error: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === "success") {
+                    document.getElementById(`${accountType}AccountName`).value = data.name;
+                    document.getElementById(`${accountType}AccountBalance`).value = data.balance;
+                    document.getElementById(`${accountType}AccountDetails`).style.display = "block";
+                    document.getElementById(`${accountType}AccountError`).textContent = "";
+                } else {
+                    resetAccountDetails(accountType);
+                    document.getElementById(`${accountType}AccountError`).textContent = 
+                        data.message || "Please enter a correct account number.";
+                }
+            })
+            .catch(error => {
+                console.error(`Error fetching ${accountType} account details:`, error);
+                resetAccountDetails(accountType);
+                document.getElementById(`${accountType}AccountError`).textContent = 
+                    "Error fetching account details. Check console for details.";
+            });
+        } else {
+            resetAccountDetails(accountType);
+            if (accountNumber.length > 0) {
+                document.getElementById(`${accountType}AccountError`).textContent = 
+                    "Account number must be 12 digits.";
+            }
+        }
+    }
+
+    // Handle from account input
+    fromAccountInput.addEventListener("input", function() {
+        fetchAccountDetails(this.value.trim(), "from");
+    });
+
+    // Handle to account input
+    toAccountInput.addEventListener("input", function() {
+        fetchAccountDetails(this.value.trim(), "to");
+    });
+
+    // Handle form submission
+    transferForm.addEventListener("submit", async function(event) {
+        event.preventDefault();
+        submitBtn.disabled = true;
+        
+        try {
+            const formData = new FormData(transferForm);
+            const response = await fetch(transferForm.action, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || "Transfer failed");
+            }
+
+            Swal.fire({
+                title: "Transfer Successful!",
+                text: data.message,
+                icon: "success",
+                showConfirmButton: true,
+                timer: 3000
+            }).then(() => {
+                window.location.href = "{% url 'transactions' %}";
+            });
+            
+        } catch (error) {
+            console.error("Transfer error:", error);
+            Swal.fire({
+                title: "Error",
+                text: error.message || "Transfer failed. Please try again.",
+                icon: "error",
+                showConfirmButton: true
+            });
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

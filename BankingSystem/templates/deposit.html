@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Deposit Money</h2>
+                    <p class="text-muted text-center mb-4">Deposit money into your account {{ username }}</p>
+                    
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form id="deposit-form" method="POST" action="{% url 'deposit' username=request.user.email %}" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="account_number" class="form-label">Account Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-university"></i></span>
+                                <input type="text" class="form-control" id="account_number" name="account_number" value="{{ request.user.customer.account.account_number }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="amount" class="form-label">Deposit Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-rupee-sign"></i></span>
+                                <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-money-bill-wave me-2"></i>Deposit Money
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'dashboard' username=request.user.username %}" class="text-decoration-none">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

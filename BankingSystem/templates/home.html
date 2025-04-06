@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if user.is_authenticated %}
+    <meta http-equiv="refresh" content="0; url={% url 'dashboard' username=user.username %}">
+{% endif %}
+
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-75">
+        <div class="col-md-8 text-center">
+            <div class="welcome-section fade-in">
+                <h1 class="display-4 mb-4">Welcome to Mthree Bank</h1>
+                <p class="lead mb-5">Experience modern banking with security and convenience</p>
+
+                <div class="d-flex justify-content-center gap-4">
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                    <a href="{% url 'custom_admin_login' %}">Admin Login</a>
+
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="row mt-5 pt-5">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-shield-alt fa-3x mb-3 text-primary"></i>
+                        <h3>Secure Banking</h3>
+                        <p>Bank with confidence using our secure platform</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-mobile-alt fa-3x mb-3 text-primary"></i>
+                        <h3>Mobile Banking</h3>
+                        <p>Access your account anytime, anywhere</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="fas fa-chart-line fa-3x mb-3 text-primary"></i>
+                        <h3>Smart Savings</h3>
+                        <p>Earn interest and grow your savings</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #262a4e, #3a4d9c);">
+        <div class="container">
+            {% if user.is_authenticated %}
+            <a class="navbar-brand" href="{% url 'dashboard' username=user.username %}">
+                <i class="fas fa-university me-2"></i>Mthree Bank
+            </a>
+            {% else %}
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="fas fa-university me-2"></i>Mthree Bank
+            </a>
+            {% endif %}
+    
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+    
+            <div class="collapse navbar-collapse" id="navbarNav">
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' username=user.username %}">
+                            <i class="fas fa-home me-1"></i> Dashboard
+                        </a>
+                    </li>
+    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'profile' username=user.username %}">
+                            <i class="fas fa-info-circle me-1"></i> About
+                        </a>
+                    </li>
+    
+                    <!-- Profile Dropdown (Shows on Hover) -->
+                    <li class="nav-item dropdown profile-dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button">
+                            <i class="fas fa-user me-1"></i> Profile
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                            <li><a class="dropdown-item" href="{% url 'profile' username=user.username %}">
+                                    <i class="fas fa-user-circle me-2"></i>My Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' username=user.username %}">
+                                    <i class="fas fa-cog me-2"></i>Settings</a></li>
+                        </ul>
+                    </li>
+    
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}">
+                            <i class="fas fa-sign-out-alt me-1"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'profile' username=user.username %}">
+                            <i class="fas fa-info-circle me-1"></i> About
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'register' %}">
+                            <i class="fas fa-user-plus me-1"></i> Register
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <style>
+    /* Show dropdown on hover */
+    .profile-dropdown:hover .dropdown-menu {
+        display: block;
+        margin-top: 0;
+    }
+    </style>
+    
+
+
+
+

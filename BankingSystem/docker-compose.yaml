@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    container_name: banking_system
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=docker
+      - DEBUG=True
+      - DATABASE_URL=mysql://root:rootpass@host.docker.internal:3306/banking_db  # Use local MySQL
+      - CACHE_URL=redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"

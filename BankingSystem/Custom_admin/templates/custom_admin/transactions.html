@@ -1,0 +1,117 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Transactions</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label>Show 
+                        <select id="entries" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                        </select>
+                        entries
+                    </label>
+                </div>
+                <div class="col-md-6 text-end">
+                    <input type="text" id="search" class="form-control form-control-sm" placeholder="Search">
+                </div>
+            </div>
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Account #</th>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Transaction</th>
+                        <th>Date Created</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionTable">
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ transaction.account.account_number }}</td>
+                        <td>{{ transaction.account.customer.first_name }} {{ transaction.account.customer.last_name }}</td>
+                        <td>{{ transaction.amount|floatformat:2 }}</td>
+                        <td>{{ transaction.get_transaction_type_display }}</td>
+                        <td>{{ transaction.timestamp }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="d-flex justify-content-between">
+                <span id="showingEntries">Showing 1 to 10 of {{ transactions|length }} entries</span>
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item" id="prevPage"><a class="page-link" href="#">Previous</a></li>
+                        <li class="page-item active"><a class="page-link" id="pageNumber">1</a></li>
+                        <li class="page-item" id="nextPage"><a class="page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let entriesSelect = document.getElementById("entries");
+    let transactionTable = document.getElementById("transactionTable");
+    let showingEntries = document.getElementById("showingEntries");
+    let prevPageBtn = document.getElementById("prevPage");
+    let nextPageBtn = document.getElementById("nextPage");
+    let pageNumberDisplay = document.getElementById("pageNumber");
+
+    let currentPage = 1;
+    let rows = Array.from(transactionTable.getElementsByTagName("tr"));
+    let totalEntries = rows.length;
+    let entriesPerPage = parseInt(entriesSelect.value);
+
+    function updateTable() {
+        entriesPerPage = parseInt(entriesSelect.value);
+        let start = (currentPage - 1) * entriesPerPage;
+        let end = start + entriesPerPage;
+
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? "" : "none";
+        });
+
+        showingEntries.innerText = `Showing ${start + 1} to ${Math.min(end, totalEntries)} of ${totalEntries} entries`;
+        pageNumberDisplay.innerText = currentPage;
+
+        // Enable/Disable pagination buttons
+        prevPageBtn.classList.toggle("disabled", currentPage === 1);
+        nextPageBtn.classList.toggle("disabled", end >= totalEntries);
+    }
+
+    function changePage(step) {
+        currentPage += step;
+        updateTable();
+    }
+
+    entriesSelect.addEventListener("change", function() {
+        currentPage = 1;
+        updateTable();
+    });
+
+    prevPageBtn.addEventListener("click", function(event) {
+        event.preventDefault();
+        if (currentPage > 1) changePage(-1);
+    });
+
+    nextPageBtn.addEventListener("click", function(event) {
+        event.preventDefault();
+        if ((currentPage * entriesPerPage) < totalEntries) changePage(1);
+    });
+
+    updateTable();
+});
+</script>
+{% endblock %}

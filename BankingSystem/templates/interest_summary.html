@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <!-- Account Information Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Account Information</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th>Account Number:</th>
+                            <td>{{ account.account_number }}</td>
+                        </tr>
+                        <tr>
+                            <th>Account Holder:</th>
+                            <td>{{ account.firstname }} {{ account.lastname }}</td>
+                        </tr>
+                        <tr>
+                            <th>Current Balance:</th>
+                            <td>Rs.{{ account.balance|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Annual Interest Rate:</th>
+                            <td>{{ annual_rate }}%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interest Summary Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Interest Summary</h4>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th>Total Interest (Last 30 days):</th>
+                            <td>Rs.{{ total_interest|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Projected Monthly Interest:</th>
+                            <td>Rs.{{ projected_monthly_interest | floatformat:2 }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interest Transactions Table -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Recent Interest Transactions</h4>
+        </div>
+        <div class="card-body">
+            {% if interest_transactions %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Balance After</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in interest_transactions %}
+                        <tr>
+                            <td>{{ transaction.timestamp|date:"F d, Y H:i" }}</td>
+                            <td>Rs.{{ transaction.amount|floatformat:2 }}</td>
+                            <td>Rs.{{ transaction.balance_after|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">No interest transactions in the last 30 days.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Back to Dashboard Button -->
+    <div class="text-center mt-4 mb-4">
+        <a href="{% url 'dashboard' username=request.user.username %}" class="btn btn-primary">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

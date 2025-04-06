@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Create New Account</h3>
+                </div>
+                <div class="card-body p-4">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <strong>{{ message }}</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form action="{% url 'register' %}" method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <!-- Personal Information Column -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3 text-primary">Personal Information</h5>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="firstname" class="form-label">First Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                            <input type="text" class="form-control" id="firstname" name="firstname" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="lastname" class="form-label">Last Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                            <input type="text" class="form-control" id="lastname" name="lastname" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        <input type="email" class="form-control" id="email" name="email" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                        <input type="tel" class="form-control" id="phone" name="phone" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="dob" class="form-label">Date of Birth</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                        <input type="date" class="form-control" id="dob" name="dob" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="gender" class="form-label">Gender</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-venus-mars"></i></span>
+                                        <select class="form-select" id="gender" name="gender" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="occupation" class="form-label">Occupation</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
+                                        <input type="text" class="form-control" id="occupation" name="occupation" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account & Address Information Column -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3 text-primary">Account & Address</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="account_type" class="form-label">Account Type</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-university"></i></span>
+                                        <select class="form-select" id="account_type" name="account_type" required>
+                                            <option value="">Select Account Type</option>
+                                            <option value="savings">Savings Account</option>
+                                            <option value="current">Current Account</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="branch" class="form-label">Branch</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-code-branch"></i></span>
+                                        <select class="form-select" id="branch" name="branch" required>
+                                            <option value="">Select Branch</option>
+                                            <option value="main">Main Branch</option>
+                                            <option value="north">North Branch</option>
+                                            <option value="south">South Branch</option>
+                                            <option value="east">East Branch</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="initial_deposit" class="form-label">Initial Deposit ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-dollar-sign"></i></span>
+                                        <input type="number" step="0.01" class="form-control" id="initial_deposit" name="initial_deposit" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="income" class="form-label">Annual Income ($)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-money-bill-wave"></i></span>
+                                        <input type="number" step="0.01" class="form-control" id="income" name="income" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="address" class="form-label">Street Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                        <input type="text" class="form-control" id="address" name="address" required>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="city" class="form-label">City</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-city"></i></span>
+                                            <input type="text" class="form-control" id="city" name="city" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="state" class="form-label">State</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-map"></i></span>
+                                            <input type="text" class="form-control" id="state" name="state" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="zipcode" class="form-label">Zip Code</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-mail-bulk"></i></span>
+                                            <input type="text" class="form-control" id="zipcode" name="zipcode" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="country" class="form-label">Country</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-globe"></i></span>
+                                            <input type="text" class="form-control" id="country" name="country" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Add this in the Account & Address Information Column section -->
+<div class="mb-3">
+    <label for="password" class="form-label">Password</label>
+    <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label for="confirm_password" class="form-label">Confirm Password</label>
+    <div class="input-group">
+        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+    </div>
+</div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <p class="mb-0">Already have an account? <a href="{% url 'login' %}" class="text-primary">Login here</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Phone number formatting
+    document.getElementById('phone').addEventListener('input', function(e) {
+        const x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+        e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+    });
+
+    // Currency formatting
+    document.getElementById('initial_deposit').addEventListener('blur', function(e) {
+        if (e.target.value) {
+            e.target.value = parseFloat(e.target.value).toFixed(2);
+        }
+    });
+
+    document.getElementById('income').addEventListener('blur', function(e) {
+        if (e.target.value) {
+            e.target.value = parseFloat(e.target.value).toFixed(2);
+        }
+    });
+
+    // Form submission loading state
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const btn = this.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Creating Account...';
+        }
+    });
+</script>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+    
+    .card-body {
+        padding: 2rem;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+        min-width: 45px;
+        justify-content: center;
+    }
+    
+    .form-control, .form-select {
+        padding: 0.75rem 1rem;
+        border-left: none;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+    }
+    
+    .input-group:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #0d6efd;
+        border: none;
+        padding: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

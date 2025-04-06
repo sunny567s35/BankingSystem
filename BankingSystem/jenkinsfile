@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = 'banking_system'
+        DOCKER_REGISTRY = 'your-docker-registry'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t $IMAGE_NAME .' 
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    sh 'docker run --rm $IMAGE_NAME python manage.py test'
+                }
+            }
+        }
+
+        stage('Push to Registry') {
+            steps {
+                script {
+                    sh 'docker tag $IMAGE_NAME $DOCKER_REGISTRY/$IMAGE_NAME:latest'
+                    sh 'docker push $DOCKER_REGISTRY/$IMAGE_NAME:latest'
+                }
+            }
+        }
+    }
+}

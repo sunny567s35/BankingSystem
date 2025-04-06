@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="text-center mb-4">Bank Statement</h2>
+          <div class="text-center mb-3">
+            <a href="{% url 'dashboard' username=request.user.username %}" class="btn btn-outline-primary">
+              <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+            <a href="{% url 'download_statement_pdf' %}" class="btn btn-success">
+              <i class="fas fa-download me-1"></i> Download Statement
+            </a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered text-center">
+              <thead class="table-dark">
+                <tr>
+                  <th>Date</th>
+                  <th>Transaction Type</th>
+                  <th>Amount</th>
+                  <th>Current Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                  <td>{{ transaction.timestamp }}</td>
+                  <td>{{ transaction.transaction_type }}</td>
+                  <td>{{ transaction.amount|floatformat:2 }}</td>
+                  <td>{{ transaction.balance_after|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-muted">No transactions found</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

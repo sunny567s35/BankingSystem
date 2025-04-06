@@ -1,0 +1,107 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Announcements</h1>
+        <a href="{% url 'create_announcement' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> Create New Announcement
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">List of Announcements</h6>
+            <div class="dropdown no-arrow">
+                <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" 
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date Created</th>
+                            <th>Title</th>
+                            <th>Message</th>
+                            <th>Last Updated</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for announcement in page_obj %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ announcement.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>{{ announcement.title }}</td>
+                            <td>{{ announcement.message|truncatechars:50 }}</td>
+                            <td>{{ announcement.updated_at|date:"Y-m-d H:i:s" }}</td>
+                            <td>
+                                <a href="#" class="btn btn-danger btn-circle btn-sm" 
+                                   onclick="confirmDelete('{% url 'delete_announcement' announcement.id %}')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">No announcements found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <!-- Pagination -->
+                <div class="row">
+                    <div class="col-sm-12 col-md-5">
+                        <div class="dataTables_info" id="dataTable_info" role="status" aria-live="polite">
+                            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-md-7">
+                        <div class="dataTables_paginate paging_simple_numbers" id="dataTable_paginate">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                <li class="paginate_button page-item previous" id="dataTable_previous">
+                                    <a href="?page={{ page_obj.previous_page_number }}" aria-controls="dataTable" data-dt-idx="0" tabindex="0" class="page-link">Previous</a>
+                                </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="paginate_button page-item active">
+                                        <a href="#" aria-controls="dataTable" data-dt-idx="{{ num }}" tabindex="0" class="page-link">{{ num }}</a>
+                                    </li>
+                                    {% else %}
+                                    <li class="paginate_button page-item">
+                                        <a href="?page={{ num }}" aria-controls="dataTable" data-dt-idx="{{ num }}" tabindex="0" class="page-link">{{ num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                <li class="paginate_button page-item next" id="dataTable_next">
+                                    <a href="?page={{ page_obj.next_page_number }}" aria-controls="dataTable" data-dt-idx="{{ page_obj.next_page_number }}" tabindex="0" class="page-link">Next</a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(url) {
+    if (confirm('Are you sure you want to delete this announcement?')) {
+        window.location.href = url;
+    }
+}
+</script>
+{% endblock %}

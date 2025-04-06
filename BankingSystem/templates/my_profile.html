@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    <strong>{{ message }}</strong>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Welcome Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <h2 class="mb-3">Welcome, {{ account.firstname }}!</h2>
+                    <p class="text-muted">Here is your profile information</p>
+                </div>
+            </div>
+
+            <!-- Account Details Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h4 class="mb-0">Account Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="info-item">
+                                <label class="text-muted">Username</label>
+                                <p class="mb-0">{{ account.user.username }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="info-item">
+                                <label class="text-muted">Email</label>
+                                <p class="mb-0">{{ account.email }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="info-item">
+                                <label class="text-muted">Account Number</label>
+                                <p class="mb-0">{{ account.account_number }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="info-item">
+                                <label class="text-muted">Account Created On</label>
+                                <p class="mb-0">{{ account.date_created }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center p-4">
+                    <!-- <h3 class="mb-2">Current Balance</h3>
+                    <h2 class="mb-4">₹{{ account.balance|floatformat:2 }}</h2> -->
+
+                    <h2 id="view-balance" style="display: none;" class="p-3 mb-2 bg-success text-white">
+                        <i class="fas fa-eye me-2"></i> Current Balance
+                    </h2>        
+                    <!-- Hidden Balance Display -->
+                    <h2 id="balance-amount" class="mb-4" style="display: none;">₹{{ account.balance|floatformat:2 }}</h2>
+
+                    <button id="show-balance-btn" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i> Show Balance
+                    </button>
+            
+                    <!-- Password Prompt (Hidden Initially) -->
+                    <div id="password-prompt" style="display: none; margin-top: 10px;">
+                        <input type="password" id="balance-password" class="form-control" placeholder="Enter password">
+                        <button id="verify-password-btn" class="btn btn-success mt-2">
+                            <i class="fas fa-check"></i> Verify
+                        </button>
+                    </div>
+
+                <!-- Error Message (Hidden Initially) -->
+                    <p id="error-message" class="text-danger mt-2" style="display: none;"></p>
+
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center">
+                <a href="{% url 'dashboard' username=account.user.username %}" class="btn btn-dark btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-item {
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        transition: transform 0.2s;
+    }
+
+    .info-item:hover {
+        transform: translateY(-2px);
+    }
+
+    .info-item label {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        display: block;
+        color: #6c757d;
+    }
+
+    .info-item p {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #212529;
+    }
+
+    .card-header {
+        border-bottom: none;
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+
+    .btn-dark {
+        background-color: #212529;
+        border-color: #212529;
+    }
+
+    .btn-dark:hover {
+        background-color: #343a40;
+        border-color: #343a40;
+    }
+</style>
+
+
+<script>
+    document.getElementById("show-balance-btn").addEventListener("click", function () {
+        document.getElementById("password-prompt").style.display = "block";
+    });
+
+    document.getElementById("verify-password-btn").addEventListener("click", function () {
+        let password = document.getElementById("balance-password").value;
+
+        if (password === "") {
+            document.getElementById("error-message").innerText = "Please enter your password!";
+            document.getElementById("error-message").style.display = "block";
+            return;
+        }
+
+        fetch("{% url 'verify_balance_password' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ password: password })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("_________Data_____underscript____",data)
+            if (data.success) {
+                document.getElementById("balance-amount").style.display = "block";
+                document.getElementById("password-prompt").style.display = "none";
+                document.getElementById("show-balance-btn").style.display = "none";
+                document.getElementById('error-message').style.display = "none";
+                document.getElementById("view-balance").style.display = "block";
+            } else {
+                document.getElementById("error-message").innerText = "Invalid password. Try again!";
+                document.getElementById("error-message").style.display = "block";
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+</script>
+{% endblock %}

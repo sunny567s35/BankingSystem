@@ -1,0 +1,46 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Create New Announcement</h1>
+        <a href="{% url 'announcements' %}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to Announcements
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Announcement Details</h6>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.title.id_for_label }}">Title</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.title.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.message.id_for_label }}">Message</label>
+                    {{ form.message }}
+                    {% if form.message.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.message.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-group form-check">
+                    {{ form.is_active }}
+                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Active</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Announcement</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

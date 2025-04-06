@@ -1,0 +1,65 @@
+{% extends 'custom_admin/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Admin Dashboard</h2>
+    <div class="row">
+        <!-- Total Accounts Card -->
+        <div class="col-md-6">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-header">Total Accounts</div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ total_accounts }}</h4>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Balance Card -->
+        <div class="col-md-6">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Total Balance</div>
+                <div class="card-body">
+                    <h4 class="card-title">Rs.{{ total_balance }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">Recent Transactions</div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Account Number</th>
+                                <th>Customer Name</th>
+                                <th>Transaction Type</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>{{ transaction.account.account_number }}</td>
+                                <td>{{ transaction.account.customer.first_name }} {{ transaction.account.customer.last_name }}</td>
+                                <td>{{ transaction.transaction_type }}</td>
+                                <td>Rs.{{ transaction.amount }}</td>
+                                <td>{{ transaction.timestamp|date:"Y-m-d H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No recent transactions available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

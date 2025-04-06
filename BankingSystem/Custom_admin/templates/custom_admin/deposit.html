@@ -1,0 +1,162 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4>Deposit</h4>
+    <div class="card p-4 shadow-sm">
+        <form method="POST" id="depositForm" action="{% url 'deposit_view' %}">
+            {% csrf_token %}
+
+            <!-- Account Number Input -->
+            <div class="mb-3">
+                <label for="account" class="form-label fw-bold">Account Number</label>
+                <input type="text" class="form-control border-success" id="account" name="account" required>
+                <div id="errorMessage" class="text-danger mt-2"></div>
+            </div>
+
+            <!-- Account Details (Initially Hidden) -->
+            <div id="accountDetails" class="row mt-3" style="display: none;">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Name</label>
+                    <input type="text" class="form-control bg-light" id="name" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Account Balance</label>
+                    <input type="text" class="form-control bg-light" id="balance" readonly>
+                </div>
+            </div>
+
+            <!-- Deposit Amount -->
+            <div class="mb-3 mt-3">
+                <label for="amount" class="form-label fw-bold">Deposit Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+
+            <!-- Submit & Cancel Buttons -->
+            <button type="submit" class="btn btn-primary" id="submitBtn">Submit</button>
+            <a href="{% url 'transactions' %}" class="btn btn-light">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const depositForm = document.getElementById("depositForm");
+    const accountInput = document.getElementById("account");
+    const accountDetails = document.getElementById("accountDetails");
+    const nameInput = document.getElementById("name");
+    const balanceInput = document.getElementById("balance");
+    const errorMessage = document.getElementById("errorMessage");
+
+    function resetAccountDetails() {
+        nameInput.value = "";
+        balanceInput.value = "";
+        accountDetails.style.display = "none";
+        errorMessage.textContent = "";
+    }
+
+    // Fetch account details when user enters account number
+    accountInput.addEventListener("input", function () {  
+        let accountNumber = this.value.trim();
+        console.log("Input changed:", accountNumber);
+
+        if (accountNumber.length === 12) {
+            console.log("Making AJAX request...");
+            fetch(`{% url 'deposit_view' %}?account_number=${accountNumber}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error("Server response:", text);
+                        throw new Error(`Server error: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Response data:", data);
+                if (data.status === "success") {
+                    nameInput.value = data.name;
+                    balanceInput.value = data.balance;
+                    accountDetails.style.display = "block"; 
+                    errorMessage.textContent = "";
+                } else {
+                    resetAccountDetails();
+                    errorMessage.textContent = data.message || "Please enter a correct account number.";
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                resetAccountDetails();
+                errorMessage.textContent = "Error fetching account details. Check console for details.";
+            });
+        } else {
+            resetAccountDetails();
+            if (accountNumber.length > 0) {
+                errorMessage.textContent = "Account number must be 12 digits.";
+            }
+        }
+    });
+
+    // Handle deposit submission
+// Replace the existing form submit handler with this:
+depositForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    
+    // Create proper form data
+    const formData = new URLSearchParams();
+    formData.append('account', accountInput.value.trim());
+    formData.append('amount', document.getElementById("amount").value);
+    formData.append('csrfmiddlewaretoken', document.querySelector("[name=csrfmiddlewaretoken]").value);
+
+    fetch(depositForm.action, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => { throw new Error(text) });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === "success") {
+            Swal.fire({
+                title: "Deposit Successful!",
+                text: `New Balance: Rs.${data.new_balance}`,
+                icon: "success",
+                confirmButtonText: "OK"
+            }).then(() => {
+                window.location.href = "{% url 'transactions' %}";
+            });
+        } else {
+            throw new Error(data.message || "Deposit failed");
+        }
+    })
+    .catch(error => {
+        console.error("Deposit error:", error);
+        Swal.fire({
+            title: "Error",
+            text: error.message || "An error occurred. Please try again.",
+            icon: "error"
+        });
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+    });
+});
+});
+</script>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- login page should not be allowed for logged in users-->
+{% if request.user.is_authenticated %}
+<meta http-equiv="refresh" content="0; url={% url 'dashboard' username=request.user.username %}">
+{% endif %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+    <strong>{{ message }}</strong>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    {% if data %}
+                    <div class="alert alert-success mb-4">
+                        <h4 class="mb-3">Account Created Successfully!</h4>
+                        <p class="mb-2"><strong>Account Number:</strong> <span
+                                class="text-success">{{data.account_number}}</span></p>
+                        <p class="mb-2"><strong>Username:</strong> <span
+                                class="text-success">{{data.user.username}}</span></p>
+                        <p class="text-danger mb-3">Please remember your username and account number. This information
+                            will only be shown once!</p>
+                        <p class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Please generate a PIN
+                            for your account to enable transactions.</p>
+                    </div>
+                    {% endif %}
+
+                    <h2 class="text-center mb-4">Login to Your Account</h2>
+
+                    <form action="{% url 'login' %}" method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                        </div>
+
+                        <!--  _____________________Verfy email button _____________________ -->
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="button" class="btn btn-secondary" id="verify-email-btn">
+                                <i class="fas fa-envelope-open-text me-2"></i>Verify Email
+                            </button>
+                        </div>
+                        <!--  _____________________OTP Input Field (Hidden Initially) _____________________ -->
+
+                        <div class="mb-3" id="otp-section" style="display: none;">
+                            <label for="otp" class="form-label">Enter OTP</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                <input type="text" class="form-control" id="otp" name="otp" placeholder="Enter OTP" required>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                        </div>
+
+                        <div class="text-center">
+                            <a href="{% url 'password_reset' %}" class="text-decoration-none me-3">
+                                <i class="fas fa-key me-1"></i>Forgot Password?
+                            </a>
+                            <a href="{% url 'register' %}" class="text-decoration-none">
+                                <i class="fas fa-user-plus me-1"></i>Register New Account
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.getElementById("verify-email-btn").addEventListener("click", function () {
+        let email = document.getElementById("email").value;
+        document.getElementById("verify-email-btn").disabled = true;
+
+        if (email === "") {
+            alert("Please enter an email address first!");
+            document.getElementById("verify-email-btn").style.display = "block";
+            return;
+        }
+
+        fetch("{% url 'send_otp' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ email: email })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById("otp-section").style.display = "block";
+                alert("OTP sent to your email!");
+            } else {
+                alert("Error sending OTP: " + data.message);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    });
+</script>
+
+{% endblock %}

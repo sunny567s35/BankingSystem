@@ -1,0 +1,155 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>List of Accounts</h2>
+    <div class="d-flex justify-content-between">
+        <div>
+            <label>Show 
+                <select class="form-select d-inline-block w-auto" id="entriesSelect">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select> entries
+            </label>
+            <div>
+                <input type="text" class="form-control w-auto" id="searchBox" placeholder="Search...">
+            </div>
+            
+            <table class="table table-bordered mt-3">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Account #</th>
+                        <th>Account Type</th>
+                        <th>Branch</th>
+                        <th>Name</th>
+                        <th>Current Balance</th>
+                        <th>Date Added</th>
+                        <th>Last Transaction Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="accountTable">
+                    {% for account in accounts %}
+                    <tr id="row-{{ account.id }}">
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ account.account_number }}</td>
+                        <td>{{ account.account_type.name }}</td>
+                        <td>{{ account.branch.branch_name }}</td>
+                        <td>{{ account.customer.first_name }} {{ account.customer.last_name }}</td>
+                        <td>{{ account.balance.balance_amount|default:"0.00"|floatformat:2 }}</td>
+                        <td>{{ account.created_at }}</td>
+                        <td>{{ account.last_transaction_date|default:"N/A" }}</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    Action
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'edit_account' account.id %}">Edit</a></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" onclick="deleteAccount({{ account.id }})">
+                                            Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="9" class="text-center">No accounts found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+
+    <div class="d-flex justify-content-between">
+        <span>Showing <span id="showingCount">1</span> to <span id="totalCount">5</span> of <span id="totalEntries">5</span> entries</span>
+        <nav>
+            <ul class="pagination">
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<script>
+    function deleteAccount(accountId) {
+        if (confirm("⚠️ WARNING: This will permanently delete the account!\n\nAll transaction history and related records will be removed.\nA deletion record will be kept for auditing.")) {
+            const reason = prompt("Please enter the reason for deletion (required):", "");
+            
+            if (reason === null) {
+                alert("Deletion cancelled by user.");
+                return;
+            }
+            
+            if (!reason || reason.trim() === "") {
+                alert("You must provide a reason for deletion.");
+                return;
+            }
+            
+            showLoading("Deleting account...");
+            
+            fetch(`/custom_admin/delete-account/${accountId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: `reason=${encodeURIComponent(reason)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showSuccessModal(
+                        "Account Deleted", 
+                        `Account was successfully deleted. Reference ID: ${data.message.split(": ")[1]}`,
+                        function() {
+                            document.getElementById(`row-${accountId}`).remove();
+                            updateTableCounters();
+                        }
+                    );
+                } else {
+                    throw new Error(data.error || "Unknown error occurred");
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                showErrorModal("Deletion Failed", error.message);
+                console.error("Deletion error:", error);
+            });
+        }
+    }
+
+    // Helper functions for UI feedback
+    function showLoading(message) {
+        // Implement your loading indicator
+    }
+    
+    function hideLoading() {
+        // Implement hiding loading indicator
+    }
+    
+    function showSuccessModal(title, message, callback) {
+        // Implement your success modal
+    }
+    
+    function showErrorModal(title, message) {
+        // Implement your error modal
+    }
+
+    function updateTableCounters() {
+        const visibleRows = document.querySelectorAll("#accountTable tr:not([style*='display: none'])");
+        // Update counters...
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,154 @@
+{% extends "custom_admin/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4>Withdraw</h4>
+    <div class="card p-4 shadow-sm">
+        <form method="POST" id="withdrawForm" action="{% url 'withdraw_view' %}">
+            {% csrf_token %}
+
+            <!-- Account Number Input -->
+            <div class="mb-3">
+                <label for="account" class="form-label fw-bold">Account Number</label>
+                <input type="text" class="form-control border-danger" id="account" name="account" required>
+                <div id="errorMessage" class="text-danger mt-2"></div>
+            </div>
+
+            <!-- Account Details (Initially Hidden) -->
+            <div id="accountDetails" class="row mt-3" style="display: none;">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Name</label>
+                    <input type="text" class="form-control bg-light" id="name" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Account Balance</label>
+                    <input type="text" class="form-control bg-light" id="balance" readonly>
+                </div>
+            </div>
+
+            <!-- Withdraw Amount -->
+            <div class="mb-3 mt-3">
+                <label for="amount" class="form-label fw-bold">Withdraw Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+
+            <!-- Submit & Cancel Buttons -->
+            <button type="submit" class="btn btn-danger" id="submitBtn">Withdraw</button>
+            <a href="{% url 'transactions' %}" class="btn btn-light">Cancel</a>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const withdrawForm = document.getElementById("withdrawForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const accountInput = document.getElementById("account");
+    const accountDetails = document.getElementById("accountDetails");
+    const nameInput = document.getElementById("name");
+    const balanceInput = document.getElementById("balance");
+    const errorMessage = document.getElementById("errorMessage");
+
+    function resetAccountDetails() {
+        nameInput.value = "";
+        balanceInput.value = "";
+        accountDetails.style.display = "none";
+        errorMessage.textContent = "";
+    }
+
+    // Fetch account details when user enters account number
+    accountInput.addEventListener("input", function () {  
+        let accountNumber = this.value.trim();
+        console.log("Input changed:", accountNumber);
+
+        if (accountNumber.length === 12) {
+            console.log("Making AJAX request...");
+            fetch(`{% url 'withdraw_view' %}?account_number=${accountNumber}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error("Server response:", text);
+                        throw new Error(`Server error: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Response data:", data);
+                if (data.status === "success") {
+                    nameInput.value = data.name;
+                    balanceInput.value = data.balance;
+                    accountDetails.style.display = "block"; 
+                    errorMessage.textContent = "";
+                } else {
+                    resetAccountDetails();
+                    errorMessage.textContent = data.message || "Please enter a correct account number.";
+                }
+            })
+            .catch(error => {
+                console.error("Fetch error:", error);
+                resetAccountDetails();
+                errorMessage.textContent = "Error fetching account details. Check console for details.";
+            });
+        } else {
+            resetAccountDetails();
+            if (accountNumber.length > 0) {
+                errorMessage.textContent = "Account number must be 12 digits.";
+            }
+        }
+    });
+
+    // Handle withdraw submission
+    withdrawForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        submitBtn.disabled = true;
+        
+        try {
+            const formData = new FormData(withdrawForm);
+            const response = await fetch(withdrawForm.action, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || "Withdrawal failed");
+            }
+
+            Swal.fire({
+                title: "Success!",
+                text: data.message,
+                icon: "success",
+                showConfirmButton: true,
+                timer: 3000
+            }).then(() => {
+                window.location.href = "{% url 'transactions' %}";
+            });
+            
+        } catch (error) {
+            console.error("Withdraw error:", error);
+            Swal.fire({
+                title: "Error",
+                text: error.message || "Withdrawal failed. Please try again.",
+                icon: "error",
+                showConfirmButton: true
+            });
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

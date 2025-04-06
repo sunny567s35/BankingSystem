@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+  <strong>{{ message }}</strong>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="container">
+  <!-- Welcome Message -->
+  <div class="welcome-banner mb-4">
+    <h2>Welcome, {{ username }}!</h2>
+  </div>
+
+  <!-- Credit Card Style Balance Display -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="credit-card">
+        <div class="credit-card-header">
+          <img
+            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABmJLR0QA/wD/AP+gvaeTAAABZUlEQVRoge2ZzU7CQBSFv0YXRsWFuDQm+gy+k8/jelx3X0xMXBgXGBcGE0rpuGgZO4XpnZlSCPQkN2mmnbnnfJ1Op1NoaKiNLjAARsBn8v0BvABnQM9SdBd4A+LC9Aq0LYQ7wAj/IKbRB9pVRXvABwcH+QZOgYvk+zKZy/IOVG5jD5gQHmKIPrABLEJ9JnOhTKgQZBt4xL+NhcSQcA/fWQRJD/EQf5AZ8Bw4ZxnkGtshvlgEuSV/iEIvuCpBRhZBxpQPYh4kj0WQB8qvyDXmQYZYBIkI38o2gBPgOPkOYQyMq4jmGQEfVQWbVFDxf0VExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRFxExEVEXETERURcRMRFRPwvRKz+b+Ub2KoqOqP+P4X2gVYV0YaGGvkFbPjxDDIm4SgAAAAASUVORK5CYII="
+            alt="chip" class="chip-icon">
+          <div class="bank-name">Mthree Bank</div>
+        </div>
+        <div class="credit-card-body">
+          <div class="balance-title">Available Balance</div>
+          <div class="balance-amount">Rs. {{ account.balance|floatformat:2 }}</div>
+          <div class="card-details">
+            <div class="card-number">{{ account.account_number }}</div>
+            <div class="card-name">{{ account.firstname }} {{ account.lastname }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h3 class="section-title">Quick Actions</h3>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <a href="{% url 'deposit' username=username %}" class="quick-action-link">
+        <div class="quick-action-card">
+          <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+          <h4>Deposit</h4>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <a href="{% url 'withdraw' username=username %}" class="quick-action-link">
+        <div class="quick-action-card">
+          <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
+          <h4>Withdraw</h4>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <a href="{% url 'transfer' username=username %}" class="quick-action-link">
+        <div class="quick-action-card">
+          <i class="fas fa-exchange-alt fa-2x mb-2"></i>
+          <h4>Transfer</h4>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <a href="{% url 'statement' username=username %}" class="quick-action-link">
+        <div class="quick-action-card">
+          <i class="fas fa-file-invoice fa-2x mb-2"></i>
+          <h4>Statement</h4>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="mb-0">Recent Transactions</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if transactions %}
+                {% for transaction in transactions %}
+                <tr>
+                  <td>{{ transaction.timestamp|date:"M d, Y" }}</td>
+                  <td
+                    class="{% if transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+                    {{ transaction.transaction_type|title }}
+                  </td>
+                  <td
+                    class="{% if transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'debit' %}text-danger{% else %}text-success{% endif %}">
+
+                    {% if transaction.transaction_type == 'withdrawal' or transaction.transaction_type == 'debit' %}
+                    -{% endif %}
+
+                    Rs. {{ transaction.amount|floatformat:2 }}
+                  </td>
+                  <td>Rs. {{ transaction.balance_after|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                  <td colspan="4" class="text-center">No recent transactions</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if account.account_type == 'savings' %}
+<div class="container mt-4">
+  <a href="{% url 'interest_summary' username=username %}" class="btn btn-info w-100">
+    <i class="fas fa-percentage me-2"></i>View Interest Summary
+  </a>
+</div>
+{% endif %}
+
+<style>
+  .text-success {
+    color: #198754 !important;
+    font-weight: 500;
+  }
+
+  .text-danger {
+    color: #dc3545 !important;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
