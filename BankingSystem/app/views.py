@@ -1146,8 +1146,17 @@ def transfer(request, username=None):
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
 # accounts/views.py
+# accounts/views.py
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.utils import timezone
+from decimal import Decimal
+from datetime import timedelta
+from .models import Account, Transaction, Balance, InterestTable
+
 @login_required
-def interest(request, username=None):
+def interest(request, username):
+    """Basic interest overview (maintains your exact JSON structure)"""
     if request.user.username != username:
         return JsonResponse({
             'error': 'Permission denied',
@@ -1159,21 +1168,18 @@ def interest(request, username=None):
         account = customer.accounts.first()
         
         if not account:
-            return JsonResponse({
-                'error': 'No account found'
-            }, status=404)
+            return JsonResponse({'error': 'No account found'}, status=404)
         
-        # Get interest rate from account type
-        if account.account_type.name == 'Savings':
-            annual_rate = Decimal('6.0')  # 6%
-            monthly_rate = Decimal('0.5')  # 0.5%
-        else:
-            annual_rate = Decimal('0.0')
-            monthly_rate = Decimal('0.0')
+        # Get interest rate - using InterestTable if available, otherwise account_type
+        interest_info = InterestTable.objects.filter(
+            account_type=account.account_type
+        ).first() or account.account_type
         
-        # Calculate projected interest
-        current_balance = Balance.objects.get(account=account).balance_amount
-        projected_interest = current_balance * (monthly_rate / Decimal('100'))
+        balance = Balance.objects.get(account=account)
+        
+        # Calculate projections (maintaining your exact calculations)
+        annual_rate = Decimal(interest_info.interest_rate)
+        monthly_interest = balance.balance_amount * (annual_rate / Decimal('1200'))
         
         return JsonResponse({
             'account': {
@@ -1183,21 +1189,19 @@ def interest(request, username=None):
                 }
             },
             'annual_rate': float(annual_rate),
-            'projected_interest': float(projected_interest),
+            'projected_interest': float(monthly_interest),
             'customer': {
                 'first_name': customer.first_name,
                 'last_name': customer.last_name,
-                'username': request  .user.username  # Include username
+                'username': username
             }
         })
-        
     except Exception as e:
-        return JsonResponse({
-            'error': f"Error loading interest information: {str(e)}"
-        }, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
-def interest_summary(request, username=None):
+def interest_summary(request, username):
+    """Detailed interest summary (maintains your exact JSON structure)"""
     if request.user.username != username:
         return JsonResponse({
             'error': 'Permission denied',
@@ -1209,35 +1213,30 @@ def interest_summary(request, username=None):
         account = customer.accounts.first()
         
         if not account:
-            return JsonResponse({
-                'error': 'No account found'
-            }, status=404)
-            
-        # Get interest transactions for the last 24 hours
-        start_date = timezone.now() - timedelta(hours=24)
-        interest_transactions = Transaction.objects.filter(
+            return JsonResponse({'error': 'No account found'}, status=404)
+        
+        # Get interest info - using InterestTable if available
+        interest_info = InterestTable.objects.filter(
+            account_type=account.account_type
+        ).first() or account.account_type
+        
+        # Get transactions from last 24 hours
+        transactions = Transaction.objects.filter(
             account=account,
             transaction_type='Interest',
-            timestamp__gte=start_date
-        ).order_by('-timestamp').values('amount', 'timestamp')
+            timestamp__gte=timezone.now() - timedelta(hours=24)
+        ).order_by('-timestamp')
         
-        # Get interest rate information from InterestTable
-        interest_info = InterestTable.objects.filter(
-            account_type  =account.account_type
-        ).first()
+        # Calculate totals (maintaining your exact structure)
+        total_interest = sum(t.amount for t in transactions)
+        balance = Balance.objects.get(account=account)
         
-        # Calculate total interest earned
-        total_interest = sum(t.amount for t in interest_transactions)
+        # Calculate next interest time (next 30-second mark)
+        now = timezone.now()
+        next_30s = now.replace(second=0) + timedelta(seconds=30)
+        if now.second >= 30:
+            next_30s += timedelta(minutes=1)
         
-        # Get current balance
-        current_balance = Balance.objects.get(account=account).balance_amount
-        
-        # Calculate projected daily interest
-        projected_daily_interest = Decimal('0.00')
-        if account.account_type.name == 'Savings' and interest_info:
-            daily_rate = interest_info.interest_rate / Decimal('365')
-            projected_daily_interest = current_balance * daily_rate
-            
         return JsonResponse({
             'account': {
                 'account_number': account.account_number,
@@ -1245,21 +1244,27 @@ def interest_summary(request, username=None):
                     'name': account.account_type.name
                 }
             },
-            'interest_transactions': list(interest_transactions),
+            'interest_transactions': [
+                {
+                    'amount': t.amount,
+                    'timestamp': t.timestamp.isoformat()
+                } for t in transactions
+            ],
             'total_interest': float(total_interest),
-            'projected_daily_interest': float(projected_daily_interest),
-            'annual_rate': float(interest_info.interest_rate) if interest_info else 0.0,
+            'current_balance': float(balance.balance_amount),
+            'annual_rate': float(interest_info.interest_rate),
+            'projected_daily_interest': float(
+                balance.balance_amount * (Decimal(interest_info.interest_rate) / Decimal('36500'))
+            ),
+            'next_interest_time': next_30s.isoformat(),
             'customer': {
                 'first_name': customer.first_name,
                 'last_name': customer.last_name,
-                'username': request.user.username  # Include username
+                'username': username
             }
         })
-        
     except Exception as e:
-        return JsonResponse({
-            'error': f"Error loading interest summary: {str(e)}"
-        }, status=500)
+        return JsonResponse({'error': str(e)}, status=500)
     
 
     

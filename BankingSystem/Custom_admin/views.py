@@ -132,20 +132,31 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from django.http import JsonResponse
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from app.models import (
     Account, Customer, Address,
     AccountType, Branch, Balance,
     Transaction, Deposit, generate_account_number
 )
 
+@csrf_exempt
 def new_account(request):
     # Ensure default account types and branches exist
-    AccountType.objects.get_or_create(name='savings', defaults={'min_balance': 500.00, 'interest_rate': 0.50})
-    AccountType.objects.get_or_create(name='current', defaults={'min_balance': 1000.00, 'interest_rate': 0.25})
+    AccountType.objects.get_or_create(
+        name='savings', 
+        defaults={'min_balance': 500.00, 'interest_rate': 0.50}
+    )
+    AccountType.objects.get_or_create(
+        name='current', 
+        defaults={'min_balance': 1000.00, 'interest_rate': 0.25}
+    )
     
     branches = ['main', 'north', 'south', 'east']
     for branch in branches:
-        Branch.objects.get_or_create(branch_name=branch, defaults={'location': f"{branch.capitalize()} Branch"})
+        Branch.objects.get_or_create(
+            branch_name=branch, 
+            defaults={'location': f"{branch.capitalize()} Branch"}
+        )
 
     if request.method == 'POST':
         try:
@@ -153,61 +164,80 @@ def new_account(request):
                 data = request.POST
                 User = get_user_model()
                 
+                # Validate required fields
+                required_fields = ['firstname', 'lastname', 'email', 'password', 
+                                 'account_type', 'branch', 'initial_deposit']
+                for field in required_fields:
+                    if not data.get(field):
+                        raise ValueError(f"{field} is required")
+
+                # Check if user already exists
+                if User.objects.filter(email=data['email']).exists():
+                    raise ValueError("Email already exists")
+
                 # Create User
                 user = User.objects.create_user(
-                    username=data.get('email'),
-                    email=data.get('email'),
-                    password=data.get('password'),
-                    first_name=data.get('firstname'),
-                    last_name=data.get('lastname')
+                    username=data['email'],
+                    email=data['email'],
+                    password=data['password'],
+                    first_name=data['firstname'],
+                    last_name=data['lastname']
                 )
 
                 # Create Customer
                 customer = Customer.objects.create(
                     user=user,
-                    first_name=data.get('firstname'),
-                    last_name=data.get('lastname'),
-                    email=data.get('email'),
+                    first_name=data['firstname'],
+                    last_name=data['lastname'],
+                    email=data['email'],
                     phone=data.get('phone', ''),
-                    date_of_birth=data.get('dob', None),
+                    date_of_birth=data.get('dob') or None,
                     gender=data.get('gender', '').capitalize(),
                     occupation=data.get('occupation', ''),
-                    income=float(data.get('income', 0))
+                    income=float(data.get('income', 0)) if data.get('income') else 0.00
                 )
 
-                # Create Address
-                Address.objects.create(
-                    customer=customer,
-                    street=data.get('address', ''),
-                    city=data.get('city', ''),
-                    state=data.get('state', ''),
-                    zip_code=data.get('zipcode', ''),
-                    country=data.get('country', '')
-                )
+                # Create Address if address fields exist
+                if any(data.get(field) for field in ['address', 'city', 'state', 'zipcode', 'country']):
+                    Address.objects.create(
+                        customer=customer,
+                        street=data.get('address', ''),
+                        city=data.get('city', ''),
+                        state=data.get('state', ''),
+                        zip_code=data.get('zipcode', ''),
+                        country=data.get('country', '')
+                    )
 
-                # Generate account number
+                # Generate unique account number
                 account_number = generate_account_number()
                 while Account.objects.filter(account_number=account_number).exists():
                     account_number = generate_account_number()
 
+                # Get account type and branch
+                try:
+                    account_type = AccountType.objects.get(name=data['account_type'].lower())
+                    branch = Branch.objects.get(branch_name=data['branch'].lower())
+                except (AccountType.DoesNotExist, Branch.DoesNotExist) as e:
+                    raise ValueError("Invalid account type or branch")
+
                 # Create Account
                 account = Account.objects.create(
                     customer=customer,
-                    account_type=AccountType.objects.get(name=data.get('account_type').lower()),
-                    branch=Branch.objects.get(branch_name=data.get('branch').lower()),
+                    account_type=account_type,
+                    branch=branch,
                     account_number=account_number,
-                    password=make_password(data.get('password')),
+                    password=make_password(data['password']),
                     last_transaction_date=timezone.now()
                 )
 
-                # Create Balance
-                initial_balance = float(data.get('balance', 0))
+                # Create initial balance (convert to float safely)
+                initial_balance = float(data['initial_deposit'])
                 Balance.objects.create(
                     account=account,
                     balance_amount=initial_balance
                 )
 
-                # Create Transaction if initial deposit exists
+                # Create initial deposit transaction if balance > 0
                 if initial_balance > 0:
                     transaction_obj = Transaction.objects.create(
                         account=account,
@@ -215,27 +245,33 @@ def new_account(request):
                         amount=initial_balance,
                         timestamp=timezone.now()
                     )
-                    Deposit.objects.create(transaction=transaction_obj)
+                    Deposit.objects.create(
+                        transaction=transaction_obj
+                    )
+                    # Update account's last transaction date
+                    account.last_transaction_date = timezone.now()
+                    account.save()
 
-                # Return JSON response for API calls
+                # Handle AJAX response
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'status': 'success',
                         'account_number': account_number,
                         'message': 'Account created successfully',
-                        'redirect_url': reverse('custom_admin_dashboard')  # Add redirect URL for AJAX
-                    })
+                        'redirect_url': reverse('custom_admin_dashboard')
+                    }, status=201)
 
-                # Return HTML response for normal browser requests
                 messages.success(request, f'Account created successfully! Account Number: {account_number}')
-                return redirect('custom_admin_dashboard')  # Changed from 'new_account' to 'dashboard'
+                return redirect('custom_admin_dashboard')
 
         except Exception as e:
+            # Rollback transaction if any error occurs
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'status': 'error',
                     'message': str(e)
                 }, status=400)
+            
             messages.error(request, f'Error creating account: {str(e)}')
             return redirect('new_account')
 
@@ -245,8 +281,8 @@ def new_account(request):
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
-            'branches': [{'name': b.branch_name} for b in branches],
-            'account_types': [{'name': at.name} for at in account_types]
+            'branches': [{'id': b.id, 'name': b.branch_name} for b in branches],
+            'account_types': [{'id': at.id, 'name': at.name} for at in account_types]
         })
     
     return render(request, 'custom_admin/new_account.html', {
@@ -268,28 +304,50 @@ def manage_account(request):
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.db import transaction
-from app.models import Account, Customer
+from django.contrib.auth.models import User
+from app.models import Account, Customer, DeletedAccount
 
 def delete_account(request, account_id):
     if request.method == "POST":
         try:
             with transaction.atomic():  # Ensures everything is deleted safely
                 account = get_object_or_404(Account, id=account_id)
-                customer = account.customer  # Get associated customer
+                customer = account.customer
+                user = request.user  # The user performing the deletion
 
-                # Deleting the account will automatically delete related models due to CASCADE
+                # Create the DeletedAccount record first
+                DeletedAccount.objects.create(
+                    original_id=account.id,
+                    customer_name=f"{customer.first_name} {customer.last_name}",
+                    account_number=account.account_number,
+                    account_type=account.account_type.name,
+                    branch_name=account.branch.branch_name,
+                    balance_at_deletion=account.balance.balance_amount if hasattr(account, 'balance') else 0,
+                    closed_by=user,
+                    customer_email=customer.email,
+                    phone_number=customer.phone,
+                    last_transaction_date=account.last_transaction_date
+                )
+
+                # Deactivate the associated user instead of deleting
+                if hasattr(customer, 'user'):
+                    customer_user = customer.user
+                    customer_user.is_active = False
+                    customer_user.username = f"deleted_{customer_user.username}_{account.account_number[-4:]}"
+                    customer_user.save()
+
+                # Delete the account (this will cascade to related models)
                 account.delete()
 
                 # If the customer has no other accounts, delete the customer and their address
-                if not customer.accounts.exists():
+                if not Customer.objects.filter(id=customer.id).exists() or not customer.accounts.exists():
                     customer.delete()
 
                 return JsonResponse({"success": True})
         except Exception as e:
-            return JsonResponse({"success": False, "error": str(e)}, status=400)
+            return JsonResponse({"success": False, "error": str(e)}, status=500)
 
-    return JsonResponse({"success": False}, status=400)
-
+    return JsonResponse({"success": False, "error": "Invalid request method"}, status=400)
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required

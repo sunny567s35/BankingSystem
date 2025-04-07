@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: celery-beat
-          image: vishnuvardhandommeti/bank:v1
+          image: vishnuvardhandommeti/bank:v2
           command: ["celery", "-A", "BankingSystem", "beat", "--loglevel=info"]
           env:
             - name: REDIS_HOST

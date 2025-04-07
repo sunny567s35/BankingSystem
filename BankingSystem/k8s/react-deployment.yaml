@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: react-app
-        image: khushigoosari/banking-system:v1 # Use your actual combined image
+        image: vishnuvardhandommeti/bank:v2 # Use your actual combined image
         ports:
         - containerPort: 3000

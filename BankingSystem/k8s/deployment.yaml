@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: django-app
-        image: khushigoosari/banking-system:v1
+        image: vishnuvardhandommeti/bank:v2
         ports:
         - containerPort: 8000  # Django
         - containerPort: 3000  # React
