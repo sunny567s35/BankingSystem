@@ -83,7 +83,8 @@ https://3661-2405-201-c047-c859-8ece-d760-52a7-1787.ngrok-free.app
 ---
 
 ## Accessing Deployed Website from remote device  
-![Screenshot (95)](https://github.com/user-attachments/assets/3f48fdbf-b722-4659-ba3f-0c7375751c36)
+![Screenshot (95)](https://github.com/user-attachments/assets/05b42cce-1d0e-4196-b457-c5a5fd1083b7)
+
 
 ## Snapshots of Jenkins Build history
 ![Screenshot (100)](https://github.com/user-attachments/assets/3504baa0-b7ba-439f-8805-bebd6f7fe78a)
