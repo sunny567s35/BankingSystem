@@ -76,9 +76,9 @@ https://3661-2405-201-c047-c859-8ece-d760-52a7-1787.ngrok-free.app
      - **Trigger on**: Just the push event
 
 ### Creating a Webhook on github :
-![Screenshot (98)](https://github.com/user-attachments/assets/7b5f1e38-5a32-44f3-9eba-a2e301e399c8)
+![image](https://github.com/user-attachments/assets/7b332c69-de3d-4b9d-98a9-3a2b366f5866)
+![Screenshot (96)](https://github.com/user-attachments/assets/9a816d28-7901-4300-9881-fab72efd4f6a)
 
-![Screenshot (96)](https://github.com/user-attachments/assets/442e7f2f-5e7f-42bb-88b7-2d6bc0d75c4a)
 
 ---
 
