@@ -4,52 +4,74 @@ pipeline {
     environment {
         VIRTUAL_ENV = 'venv'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
-        IMAGE_NAME = 'bank:v2'
-        DOCKER_REGISTRY = 'vishnuvardhandommeti'
-
-        // Correct Minikube paths
+        IMAGE_NAME = 'bankingsystem:v1'
+        DOCKER_REGISTRY = 'sasisandeepsingh'
         KUBECONFIG = '/var/lib/jenkins/.kube/config'
-        MINIKUBE_HOME = '/var/lib/jenkins/.minikube'
+        MINIKUBE_HOME = "$HOME/.minikube"
     }
 
     stages {
+
         stage('Clone Repository') {
             steps {
-                git branch: 'final',
-                    credentialsId: 'Git_Jenkins',
+                git branch: 'main', 
+                    credentialsId: 'Git_Jenkins',  
                     url: 'https://github.com/sunny567s35/BankingSystem.git'
             }
         }
 
-        stage('Setup Minikube') {
+        stage('Build and Tag Docker Image') {
             steps {
                 script {
                     sh '''
-                        echo "[INFO] Setting up Minikube environment..."
-                        
-                        # Ensure proper permissions
-                        sudo mkdir -p /var/lib/jenkins/.minikube
-                        sudo mkdir -p /var/lib/jenkins/.kube
-                        sudo chown -R jenkins:jenkins /var/lib/jenkins/.minikube
-                        sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
-                        
-                        # Start Minikube if not running
-                        if ! minikube status; then
-                            minikube start --driver=docker
-                            minikube update-context
-                        fi
-                        
-                        # Verify and configure access
-                        minikube status
-                        kubectl config use-context minikube
-                        kubectl cluster-info
-                        
-                        # Ensure kubeconfig exists
-                        if [ ! -f "/var/lib/jenkins/.kube/config" ]; then
-                            cp ${MINIKUBE_HOME}/profiles/minikube/client.config /var/lib/jenkins/.kube/config
-                            chmod 600 /var/lib/jenkins/.kube/config
-                        fi
+                        echo "Building Docker image..."
+                        cd BankingSystem/BankingSystem
+                        echo "9848" | sudo -S docker build -t $DOCKER_REGISTRY/$IMAGE_NAME .
+                        echo "Docker image built and tagged as $DOCKER_REGISTRY/$IMAGE_NAME"
                     '''
+                }
+            }
+        }
+
+        stage('Run Locally') {
+            steps {
+                script {
+                    sh '''
+                        echo "Stopping any running containers..."
+                        echo "9848" | sudo -S docker stop $(docker ps -q) || true
+                        echo "9848" | sudo -S docker rm $(docker ps -aq) || true
+
+                        echo "Running container locally for testing..."
+                        echo "9848" | sudo -S docker run -d -p 8000:8000 --name bankingsystem-test $DOCKER_REGISTRY/$IMAGE_NAME
+
+                        echo "App is accessible locally at http://localhost:8000"
+                        sleep 10
+                        docker logs bankingsystem-test --tail 20
+                    '''
+                }
+            }
+        }
+
+        stage('Connect Minikube') {
+            steps {
+                script {
+                    withEnv([
+                        "DOCKER_HOST=tcp://192.168.49.2:2376",
+                        "DOCKER_CERT_PATH=/var/lib/jenkins/.minikube/certs",
+                        "DOCKER_TLS_VERIFY=1"
+                    ]) {
+                        sh '''
+                            echo "9848" | sudo -S chown -R $USER $HOME/.minikube
+                            echo "9848" | sudo -S chmod -R u+wrx $HOME/.minikube
+                            echo "9848" | sudo -S chmod 600 /home/sandeep/.minikube/certs/key.pem
+                            echo "9848" | sudo -S chmod 600 /home/sandeep/.minikube/certs/cert.pem
+                            echo "9848" | sudo -S chown -R $USER:$USER /home/sandeep/.minikube
+                            echo "9848" | sudo -S chmod -R 700 /home/sandeep/.minikube
+
+                            minikube status && kubectl cluster-info
+                            kubectl config use-context minikube
+                        '''
+                    }
                 }
             }
         }
@@ -57,171 +79,60 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 sh '''
-                    echo "[INFO] Deploying application components..."
-                    # Use absolute path to ensure we find the k8s directory
-                    K8S_DIR=$(find . -name k8s -type d | head -1)
-                    cd "${K8S_DIR}"
+                    cd BankingSystem/BankingSystem
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/django-service.yaml
+                    kubectl apply -f k8s/celery-worker.yaml
+                    kubectl apply -f k8s/celery-beat.yaml
 
-                    kubectl apply -f deployment.yaml
-                    kubectl apply -f django-service.yaml
-                    kubectl apply -f redis-deployment.yaml
-                    kubectl apply -f react-deployment.yaml
-                    kubectl apply -f react-service.yaml
-                    kubectl apply -f celery-beat.yaml
-                    kubectl apply -f celery-worker.yaml
-
-                    echo "[INFO] Waiting for pods to be ready..."
-                    kubectl wait --for=condition=Ready pod -l app=django-app --timeout=300s
-                    kubectl wait --for=condition=Ready pod -l app=react-app --timeout=300s
-                    kubectl wait --for=condition=Ready pod -l app=celery-worker --timeout=300s
-                    kubectl wait --for=condition=Ready pod -l app=celery-beat --timeout=300s
+                    echo "Waiting for Django pod to be created..."
+                    timeout 120 bash -c 'until kubectl get pods -l app=django-app --field-selector=status.phase=Running | grep django-app; do sleep 5; done'
+                    kubectl wait --for=condition=Ready pod -l app=django-app --timeout=600s || echo "Warning: Django pod not ready"
                 '''
             }
         }
 
         stage('Deploy Monitoring') {
-    steps {
-        sh '''
-            echo "[INFO] Deploying monitoring stack..."
-            kubectl create namespace monitoring || true
-            
-            # Set base directory
-            BASE_DIR="/home/mthree/Final/BankingSystem/BankingSystem"
-            
-            # Deploy Redis Exporter
-            kubectl apply -f "${BASE_DIR}/k8s/redis-exporter.yaml" -n monitoring
-            
-            # Deploy Prometheus
-            kubectl apply -f "${BASE_DIR}/prometheus/prometheus-config.yaml" -n monitoring
-            kubectl apply -f "${BASE_DIR}/prometheus/prometheus-deployment.yaml" -n monitoring
-            kubectl apply -f "${BASE_DIR}/prometheus/prometheus-service.yaml" -n monitoring
-            
-            # Deploy Grafana from the combined grafana.yaml
-            echo "[INFO] Deploying Grafana..."
-            kubectl apply -f "${BASE_DIR}/grafana/grafana.yaml" -n monitoring
-
-            # Wait for monitoring pods
-            echo "[INFO] Waiting for monitoring pods..."
-            kubectl wait --for=condition=Ready pod -n monitoring -l app=prometheus --timeout=300s
-            kubectl wait --for=condition=Ready pod -n monitoring -l app=redis-exporter --timeout=300s
-            
-            # Special handling for Grafana with proper bash syntax
-            echo "[INFO] Waiting for Grafana to be ready..."
-            COUNTER=0
-            while [[ $COUNTER -lt 60 ]]; do
-                STATUS=$(kubectl get pods -n monitoring -l app=grafana -o jsonpath="{.items[0].status.phase}")
-                if [[ "$STATUS" == "Running" ]]; then
-                    echo "Grafana is running"
-                    break
-                fi
-                echo "Waiting for Grafana... ($COUNTER/60)"
-                kubectl describe pod -n monitoring -l app=grafana | grep -A 10 Events || true
-                sleep 5
-                COUNTER=$((COUNTER + 1))
-            done
-            
-            if [[ "$STATUS" != "Running" ]]; then
-                echo "[WARNING] Grafana did not reach Running state within 5 minutes"
-                echo "[DEBUG] Grafana pod details:"
-                kubectl describe pod -n monitoring -l app=grafana
-                echo "[DEBUG] Cluster events:"
-                kubectl get events -n monitoring --sort-by=.metadata.creationTimestamp
-                echo "[DEBUG] PVC status:"
-                kubectl get pvc -n monitoring
-            else
-                echo "[INFO] All monitoring components are ready"
-            fi
-            
-            echo "[INFO] Monitoring components status:"
-            kubectl get all -n monitoring
-        '''
-    }
-}
-
-        stage('Expose Services') {
             steps {
-                script {
-                    // Get all service URLs
-                    def MINIKUBE_IP = sh(script: 'minikube ip', returnStdout: true).trim()
-                    def DJANGO_URL = sh(script: 'minikube service django-service --url', returnStdout: true).trim()
-                    def REACT_URL = sh(script: 'minikube service react-service --url', returnStdout: true).trim()
-                    def PROMETHEUS_PORT = sh(script: 'kubectl get svc -n monitoring prometheus -o jsonpath="{.spec.ports[0].nodePort}"', returnStdout: true).trim()
-                    def GRAFANA_PORT = sh(script: 'kubectl get svc -n monitoring grafana -o jsonpath="{.spec.ports[0].nodePort}"', returnStdout: true).trim()
-                    def REDIS_EXPORTER_PORT = sh(script: 'kubectl get svc -n monitoring redis-exporter -o jsonpath="{.spec.ports[0].nodePort}"', returnStdout: true).trim()
+                sh '''
+                    cd BankingSystem/BankingSystem
+                    kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+                    kubectl apply -f prometheus/ -n monitoring
+                    kubectl apply -f grafana/ -n monitoring
 
-                    echo """
-                    =============================================
-                    Services are available at:
-                    
-                    Application Services:
-                    Django:       ${DJANGO_URL}
-                    React:        ${REACT_URL}
-                    
-                    Monitoring Services:
-                    Prometheus:   http://${MINIKUBE_IP}:${PROMETHEUS_PORT}
-                    Grafana:      http://${MINIKUBE_IP}:${GRAFANA_PORT}
-                    Redis Metrics: http://${MINIKUBE_IP}:${REDIS_EXPORTER_PORT}
-                    =============================================
-                    """
-
-                    // Start port-forwarding for all services
-                    sh '''
-                        # Kill any existing port-forward processes
-                        pkill -f "kubectl port-forward" || true
-                        
-                        # Application services
-                        nohup kubectl port-forward svc/django-service 8000:8000 > django-pf.log 2>&1 &
-                        nohup kubectl port-forward svc/react-service 3000:3000 > react-pf.log 2>&1 &
-                        
-                        # Monitoring services
-                        nohup kubectl port-forward -n monitoring svc/prometheus 9090:9090 > prometheus-pf.log 2>&1 &
-                        nohup kubectl port-forward -n monitoring svc/grafana 3001:3000 > grafana-pf.log 2>&1 &
-                        nohup kubectl port-forward -n monitoring svc/redis-exporter 9121:9121 > redis-exporter-pf.log 2>&1 &
-                        
-                        echo "Local access ports:"
-                        echo "Django:        http://localhost:8000"
-                        echo "React:         http://localhost:3000"
-                        echo "Prometheus:    http://localhost:9090"
-                        echo "Grafana:       http://localhost:3001"
-                        echo "Redis Metrics: http://localhost:9121"
-                    '''
-                }
+                    for component in prometheus grafana; do
+                        timeout 120 bash -c "until kubectl get pod -n monitoring -l app=${component} --ignore-not-found; do sleep 5; done"
+                        kubectl wait --for=condition=Ready pod -l app=${component} --timeout=600s -n monitoring || echo "ERROR: ${component} did not become ready"
+                    done
+                '''
             }
         }
 
-        stage('Keep Alive') {
+        stage('Start Celery Services') {
             steps {
-                script {
-                    echo "All services are now running and accessible."
-                    
-                    // Continuous health check for all components
-                    sh '''
-                        while true; do
-                            echo "[STATUS CHECK] $(date)"
-                            echo "Application Pods:"
-                            echo "Django: $(kubectl get pod -l app=django-app -o jsonpath='{.items[0].status.phase}')"
-                            echo "React: $(kubectl get pod -l app=react-app -o jsonpath='{.items[0].status.phase}')"
-                            echo "Celery: $(kubectl get pod -l app=celery-worker -o jsonpath='{.items[0].status.phase}')"
-                            
-                            echo "Monitoring Pods:"
-                            echo "Prometheus: $(kubectl get pod -n monitoring -l app=prometheus -o jsonpath='{.items[0].status.phase}')"
-                            echo "Grafana: $(kubectl get pod -n monitoring -l app=grafana -o jsonpath='{.items[0].status.phase}')"
-                            echo "Redis Exporter: $(kubectl get pod -n monitoring -l app=redis-exporter -o jsonpath='{.items[0].status.phase}')"
-                            
-                            sleep 300
-                        done
-                    '''
-                }
+                sh '''
+                    echo "Waiting for Celery worker to be ready..."
+                    timeout 120 bash -c 'until kubectl get pods -l app=celery-worker --field-selector=status.phase=Running | grep celery-worker; do sleep 5; done'
+                    echo "Waiting for Celery Beat to be ready..."
+                    timeout 120 bash -c 'until kubectl get pods -l app=celery-beat --field-selector=status.phase=Running | grep celery-beat; do sleep 5; done'
+                    kubectl wait --for=condition=Ready pod -l app=celery-worker --timeout=600s || echo "ERROR: Celery worker not ready"
+                    kubectl wait --for=condition=Ready pod -l app=celery-beat --timeout=600s || echo "ERROR: Celery Beat not ready"
+                '''
             }
         }
-    }
 
-    post {
-        always {
-            echo 'Cleaning up...'
-            sh '''
-                pkill -f "kubectl port-forward" || true
-            '''
+        stage('Stable Port Forwarding') {
+            steps {
+                sh '''
+                    sleep 20
+                    nohup kubectl port-forward svc/django-service 8000:8000 --address 0.0.0.0 > django-portforward.log 2>&1 &
+                    nohup kubectl port-forward svc/prometheus 9090:9090 --address 0.0.0.0 > prometheus-portforward.log 2>&1 &
+                    nohup kubectl port-forward svc/grafana 3000:3000 --address 0.0.0.0 > grafana-portforward.log 2>&1 &
+                    echo "Application is running at http://$(minikube ip):8000"
+                    echo "Prometheus is running at http://$(minikube ip):9090"
+                    echo "Grafana is running at http://$(minikube ip):3000"
+                '''
+            }
         }
     }
 }
