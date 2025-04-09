@@ -60,10 +60,12 @@ This part showcases a production-like CI/CD pipeline setup for a **Banking Syste
 ngrok http 8080
 ```
 
+![Screenshot (97)](https://github.com/user-attachments/assets/1b532db2-6235-4b56-9b25-ecc930600f1a)
+
 
 2. Copy the public forwarding URL:
 ```
-https://xxxx.ngrok-free.app
+https://3661-2405-201-c047-c859-8ece-d760-52a7-1787.ngrok-free.app
 ```
 
 3. On GitHub:
@@ -73,25 +75,19 @@ https://xxxx.ngrok-free.app
      - **Content Type**: `application/json`
      - **Trigger on**: Just the push event
 
----
+### Creating a Webhook on github :
+![Screenshot (98)](https://github.com/user-attachments/assets/7b5f1e38-5a32-44f3-9eba-a2e301e399c8)
 
-## 📈 Monitoring Setup
-
-- Prometheus scrapes `/metrics` from Django app.
-- Grafana dashboard visualizes latency, requests, and system health.
-
-> ⚠️ Prometheus config must point to Django’s `metrics` endpoint via service name.
+![Screenshot (96)](https://github.com/user-attachments/assets/442e7f2f-5e7f-42bb-88b7-2d6bc0d75c4a)
 
 ---
 
-## 🐳 Docker Build Example
+## Accessing Deployed Website from remote device  
+![Screenshot (95)](https://github.com/user-attachments/assets/3f48fdbf-b722-4659-ba3f-0c7375751c36)
 
-```bash
-docker build -t sasisandeepsingh/bankingsystem:v7 .
-docker run -d -p 8000:8000 sasisandeepsingh/bankingsystem:v1
-```
-
----
+## Snapshots of Jenkins Build history
+![Screenshot (100)](https://github.com/user-attachments/assets/3504baa0-b7ba-439f-8805-bebd6f7fe78a)
+![image](https://github.com/user-attachments/assets/235ee6f3-984b-4395-96b3-653ac2a242bf)
 
 ## ✅ Best Practices Followed
 
