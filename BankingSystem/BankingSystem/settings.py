@@ -223,10 +223,12 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://web:8000",
     "http://localhost:3000",
+    "https://3661-2405-201-c047-c859-8ece-d760-52a7-1787.ngrok-free.app",r"^https:\/\/[a-z0-9\-]+\.ngrok-free\.app$",
 ]
 # Allow all origins (for development purposes only)
 CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Your React app
+    "http://localhost:3000", 
+     "https://3661-2405-201-c047-c859-8ece-d760-52a7-1787.ngrok-free.app"# Your React app
 ]
