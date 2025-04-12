@@ -11,7 +11,7 @@ Team Contribution:
 - Dockerfile - Hema
 - Kubernetes - Khushi, Himaansh
 - Jenkins - Sandeep, Vishnu
-- Prometheus & Grafana - Sindhuja, Khushi
+- Prometheus & Grafana - Sandeep, Sindhuja, Khushi
 * * *
 # 🏦 BankingSystem Deployment Guide
 
@@ -63,8 +63,8 @@ Use an existing Docker image from DockerHub, Redeploy Kubernetes pods, Port forw
 ### 1\. Clone the repository
 
 ```bash
-git clone https://github.com/KhushiGK/BankingSystem.git
-git clone git@github.com:KhushiGK/BankingSystem.git
+git clone https://github.com/sunny567s35/BankingSystem.git
+git clone git@github.com:sunny567s35/BankingSystem.git
 cd BankingSystem` 
 ``` 
 
