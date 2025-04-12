@@ -22,8 +22,8 @@ Team Contribution:
 ## 🚀 Ubuntu Instructions 
 ### 1. Clone the repository 
 ```bash
-git clone https://github.com/KhushiGK/BankingSystem.git
-git clone git@github.com:KhushiGK/BankingSystem.git
+git clone https://github.com/sunny567s35/BankingSystem.git
+git clone git@github.com:sunny567s35/BankingSystem.git
 cd BankingSystem` 
 ```
 ### 2\. Set DockerHub image name
